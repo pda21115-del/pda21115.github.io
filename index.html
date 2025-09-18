@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Labyrinth Level Loop - Clickable Objects - A-Frame</title>
+    <title>Big Complex Labyrinth - A-Frame</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script>
       function getBoundingBox(el) {
@@ -50,7 +50,7 @@
       });
 
       AFRAME.registerComponent('random-objects', {
-        schema: { cubeCount: {type: 'int', default: 7}, pyramidCount: {type: 'int', default: 7} },
+        schema: { cubeCount: {type: 'int', default: 15}, pyramidCount: {type: 'int', default: 15} },
         init: function () {
           this.generateObjects();
         },
@@ -62,9 +62,9 @@
           }
           window.generatedObjects = [];
           this.objectsLeft = this.data.cubeCount + this.data.pyramidCount;
-          const minX = -4, maxX = 4, minZ = -4, maxZ = 4, minY = 0.6, maxY = 1.2;
+          // Bigger range for objects
+          const minX = -9, maxX = 9, minZ = -9, maxZ = 9, minY = 0.6, maxY = 1.2;
           const minScale = 0.2, maxScale = 0.5;
-
           for (let i = 0; i < this.data.cubeCount; i++) {
             let sx = minScale + Math.random() * (maxScale - minScale);
             let sy = minScale + Math.random() * (maxScale - minScale);
@@ -107,7 +107,7 @@
               let cam = document.querySelector('[camera]');
               let ids = [
                 '#wall1_left','#wall1_right','#wall2','#wall3','#wall4',
-                '#intwall1','#intwall2','#door'
+                '#intwall1','#intwall2','#intwall3','#intwall4','#intwall5','#intwall6','#door'
               ];
               let staticObstacles = ids.map(id => document.querySelector(id));
               let dynamicObstacles = window.generatedObjects || [];
@@ -121,23 +121,28 @@
   <body>
     <a-scene random-objects>
       <a-sky color="#222"></a-sky>
-      <!-- External Walls with Opening -->
-      <a-box id="wall1_left" position="-3 1 -5" width="4" height="2" depth="0.3" color="#555"></a-box>
-      <a-box id="wall1_right" position="3 1 -5" width="4" height="2" depth="0.3" color="#555"></a-box>
-      <a-box id="wall2" position="5 1 0" width="0.3" height="2" depth="10" color="#555"></a-box>
-      <a-box id="wall3" position="0 1 5" width="10" height="2" depth="0.3" color="#555"></a-box>
-      <a-box id="wall4" position="-5 1 0" width="0.3" height="2" depth="10" color="#555"></a-box>
-      <!-- Internal Walls -->
-      <a-box id="intwall1" position="0 1 -2" width="6" height="2" depth="0.3" color="#666"></a-box>
-      <a-box id="intwall2" position="0 1 2" width="6" height="2" depth="0.3" color="#666"></a-box>
-      <a-box id="door" position="0 1 0" width="2" height="2" depth="0.3" color="#ff0"></a-box>
+      <!-- External walls for a 20x20 room, opening at the front -->
+      <a-box id="wall1_left" position="-6 1 -10" width="8" height="2" depth="0.3" color="#555"></a-box>
+      <a-box id="wall1_right" position="6 1 -10" width="8" height="2" depth="0.3" color="#555"></a-box>
+      <a-box id="wall2" position="10 1 0" width="0.3" height="2" depth="20" color="#555"></a-box>
+      <a-box id="wall3" position="0 1 10" width="20" height="2" depth="0.3" color="#555"></a-box>
+      <a-box id="wall4" position="-10 1 0" width="0.3" height="2" depth="20" color="#555"></a-box>
+      <!-- Internal walls for more complexity -->
+      <a-box id="intwall1" position="-5 1 -5" width="10" height="2" depth="0.3" color="#666"></a-box>
+      <a-box id="intwall2" position="5 1 -5" width="10" height="2" depth="0.3" color="#666"></a-box>
+      <a-box id="intwall3" position="0 1 0" width="0.3" height="2" depth="10" color="#666"></a-box>
+      <a-box id="intwall4" position="-5 1 5" width="10" height="2" depth="0.3" color="#666"></a-box>
+      <a-box id="intwall5" position="5 1 5" width="10" height="2" depth="0.3" color="#666"></a-box>
+      <a-box id="intwall6" position="5 1 0" width="0.3" height="2" depth="10" color="#666"></a-box>
+      <!-- A central "door" -->
+      <a-box id="door" position="0 1 -8" width="4" height="2" depth="0.3" color="#ff0"></a-box>
       <!-- Camera with advanced collision and cursor for mouse click -->
       <a-entity 
         camera 
-        wasd-controls="acceleration: 15" 
+        wasd-controls="acceleration: 20" 
         look-controls 
-        position="0 1.6 -7"
-        advanced-collision="obstacles: #wall1_left, #wall1_right, #wall2, #wall3, #wall4, #intwall1, #intwall2, #door"
+        position="0 1.6 -13"
+        advanced-collision="obstacles: #wall1_left, #wall1_right, #wall2, #wall3, #wall4, #intwall1, #intwall2, #intwall3, #intwall4, #intwall5, #intwall6, #door"
       >
         <!-- Cursor for mouse interaction -->
         <a-entity 
@@ -155,7 +160,7 @@
             let cam = document.querySelector('[camera]');
             let ids = [
               '#wall1_left','#wall1_right','#wall2','#wall3','#wall4',
-              '#intwall1','#intwall2','#door'
+              '#intwall1','#intwall2','#intwall3','#intwall4','#intwall5','#intwall6','#door'
             ];
             let staticObstacles = ids.map(id => document.querySelector(id));
             let dynamicObstacles = window.generatedObjects || [];
