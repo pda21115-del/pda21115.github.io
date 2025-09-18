@@ -2,10 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Labyrinth Level Loop - A-Frame</title>
+    <title>Labyrinth Level Loop - Clickable Objects - A-Frame</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script>
-      // Helper: Calculate bounding box
       function getBoundingBox(el) {
         const pos = el.object3D.position;
         const geo = el.getAttribute('geometry');
@@ -22,7 +21,6 @@
         };
       }
 
-      // Advanced collision component
       AFRAME.registerComponent('advanced-collision', {
         schema: { obstacles: {type: 'selectorAll'} },
         init: function () {
@@ -51,14 +49,12 @@
         }
       });
 
-      // Random cubes and pyramids generator with click-to-vanish and level loop
       AFRAME.registerComponent('random-objects', {
         schema: { cubeCount: {type: 'int', default: 7}, pyramidCount: {type: 'int', default: 7} },
         init: function () {
           this.generateObjects();
         },
         generateObjects: function () {
-          // Remove previous objects if any
           if (window.generatedObjects) {
             window.generatedObjects.forEach(obj => {
               if (obj.parentNode) obj.parentNode.removeChild(obj);
@@ -67,9 +63,8 @@
           window.generatedObjects = [];
           this.objectsLeft = this.data.cubeCount + this.data.pyramidCount;
           const minX = -4, maxX = 4, minZ = -4, maxZ = 4, minY = 0.6, maxY = 1.2;
-          // Smaller scale
           const minScale = 0.2, maxScale = 0.5;
-          // Cubes
+
           for (let i = 0; i < this.data.cubeCount; i++) {
             let sx = minScale + Math.random() * (maxScale - minScale);
             let sy = minScale + Math.random() * (maxScale - minScale);
@@ -83,12 +78,11 @@
             el.setAttribute('height', sy);
             el.setAttribute('depth', sz);
             el.setAttribute('color', `#${Math.floor(Math.random()*16777215).toString(16)}`);
-            // Click to vanish
+            el.setAttribute('class', 'clickable');
             el.addEventListener('click', () => { this.handleObjectClick(el); });
             this.el.appendChild(el);
             window.generatedObjects.push(el);
           }
-          // Pyramids (tetrahedrons)
           for (let i = 0; i < this.data.pyramidCount; i++) {
             let scale = minScale + Math.random() * (maxScale - minScale);
             let px = minX + Math.random() * (maxX - minX);
@@ -98,6 +92,7 @@
             el.setAttribute('geometry', {primitive: 'tetrahedron', radius: scale});
             el.setAttribute('position', {x: px, y: py, z: pz});
             el.setAttribute('material', `color: #${Math.floor(Math.random()*16777215).toString(16)}`);
+            el.setAttribute('class', 'clickable');
             el.addEventListener('click', () => { this.handleObjectClick(el); });
             this.el.appendChild(el);
             window.generatedObjects.push(el);
@@ -107,10 +102,8 @@
           if (el.parentNode) el.parentNode.removeChild(el);
           this.objectsLeft--;
           if (this.objectsLeft === 0) {
-            // Level complete, restart after a brief delay
             setTimeout(() => {
               this.generateObjects();
-              // Update collisions
               let cam = document.querySelector('[camera]');
               let ids = [
                 '#wall1_left','#wall1_right','#wall2','#wall3','#wall4',
@@ -138,14 +131,23 @@
       <a-box id="intwall1" position="0 1 -2" width="6" height="2" depth="0.3" color="#666"></a-box>
       <a-box id="intwall2" position="0 1 2" width="6" height="2" depth="0.3" color="#666"></a-box>
       <a-box id="door" position="0 1 0" width="2" height="2" depth="0.3" color="#ff0"></a-box>
-      <!-- Camera with advanced collision -->
+      <!-- Camera with advanced collision and cursor for mouse click -->
       <a-entity 
         camera 
         wasd-controls="acceleration: 15" 
         look-controls 
         position="0 1.6 -7"
         advanced-collision="obstacles: #wall1_left, #wall1_right, #wall2, #wall3, #wall4, #intwall1, #intwall2, #door"
-      ></a-entity>
+      >
+        <!-- Cursor for mouse interaction -->
+        <a-entity 
+          cursor="fuse: false; rayOrigin: mouse"
+          raycaster="objects: .clickable"
+          position="0 0 -1"
+          geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+          material="color: #FFF; shader: flat">
+        </a-entity>
+      </a-entity>
       <!-- Update collisions after objects are generated -->
       <script>
         document.addEventListener("DOMContentLoaded", function(){
