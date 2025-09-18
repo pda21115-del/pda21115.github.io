@@ -2,76 +2,102 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Λαβύρινθος με Κίνηση και Τυχαία Αντικείμενα - A-Frame</title>
+    <title>Advanced Labyrinth with Movement & Collision - A-Frame</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <!-- vibe-coding: custom scripts -->
     <script>
-      // Collision detection component (from previous example)
-      AFRAME.registerComponent('simple-collision', {
-        schema: {walls: {type: 'selectorAll'}},
+      // Helper: Calculate bounding box
+      function getBoundingBox(el) {
+        const pos = el.object3D.position;
+        const geo = el.getAttribute('geometry');
+        if (!geo) return null;
+        let width = geo.width || geo.radius || 1;
+        let height = geo.height || geo.radius || 1;
+        let depth = geo.depth || geo.radius || 1;
+
+        // For tetrahedron, use radius for all
+        if (geo.primitive === 'tetrahedron') {
+          width = height = depth = geo.radius || 1;
+        }
+        return {
+          min: { x: pos.x - width/2, y: pos.y - height/2, z: pos.z - depth/2 },
+          max: { x: pos.x + width/2, y: pos.y + height/2, z: pos.z + depth/2 }
+        };
+      }
+
+      // Advanced collision component
+      AFRAME.registerComponent('advanced-collision', {
+        schema: {
+          obstacles: {type: 'selectorAll'}
+        },
         init: function () {
-          this.lastPosition = this.el.object3D.position.clone();
+          this.lastValidPosition = this.el.object3D.position.clone();
         },
         tick: function () {
-          let pos = this.el.object3D.position;
-          for (let wall of this.data.walls) {
-            let wpos = wall.object3D.position;
-            let wsize = wall.getAttribute('geometry');
-            let minX = wpos.x - wsize.width/2, maxX = wpos.x + wsize.width/2;
-            let minZ = wpos.z - wsize.depth/2, maxZ = wpos.z + wsize.depth/2;
-            let minY = wpos.y - wsize.height/2, maxY = wpos.y + wsize.height/2;
-            if (pos.x > minX && pos.x < maxX &&
-                pos.y > minY && pos.y < maxY &&
-                pos.z > minZ && pos.z < maxZ) {
-              pos.copy(this.lastPosition); // revert to last position
+          const camera = this.el.object3D;
+          const current = camera.position;
+          const radius = 0.5; // Camera body "radius"
+
+          for (let obstacle of this.data.obstacles) {
+            const box = getBoundingBox(obstacle);
+            if (!box) continue;
+            // Simple sphere vs box collision
+            if (
+              current.x + radius > box.min.x &&
+              current.x - radius < box.max.x &&
+              current.y + radius > box.min.y &&
+              current.y - radius < box.max.y &&
+              current.z + radius > box.min.z &&
+              current.z - radius < box.max.z
+            ) {
+              // Collision detected, revert to last valid position
+              camera.position.copy(this.lastValidPosition);
               return;
             }
           }
-          this.lastPosition.copy(pos);
+          // No collision, save position
+          this.lastValidPosition.copy(current);
         }
       });
 
       // Random cubes and pyramids generator
       AFRAME.registerComponent('random-objects', {
         schema: {
-          cubeCount: {type: 'int', default: 8},
-          pyramidCount: {type: 'int', default: 6}
+          cubeCount: {type: 'int', default: 7},
+          pyramidCount: {type: 'int', default: 7}
         },
         init: function () {
+          window.generatedObjects = []; // Store references for collision
           // Limits for placement inside labyrinth
-          const minX = -4, maxX = 4, minZ = -4, maxZ = 4, minY = 0.5, maxY = 1.5;
+          const minX = -4, maxX = 4, minZ = -4, maxZ = 4, minY = 0.6, maxY = 1.2;
           // Cubes
           for (let i = 0; i < this.data.cubeCount; i++) {
+            let sx = 0.5 + Math.random()*1;
+            let sy = 0.5 + Math.random()*1;
+            let sz = 0.5 + Math.random()*1;
+            let px = minX + Math.random() * (maxX - minX);
+            let py = minY + Math.random() * (maxY - minY);
+            let pz = minZ + Math.random() * (maxZ - minZ);
             let el = document.createElement('a-box');
-            let sx = 0.5 + Math.random();
-            let sy = 0.5 + Math.random();
-            let sz = 0.5 + Math.random();
-            el.setAttribute('position', {
-              x: minX + Math.random() * (maxX - minX),
-              y: minY + Math.random() * (maxY - minY),
-              z: minZ + Math.random() * (maxZ - minZ)
-            });
+            el.setAttribute('position', {x: px, y: py, z: pz});
             el.setAttribute('width', sx);
             el.setAttribute('height', sy);
             el.setAttribute('depth', sz);
             el.setAttribute('color', `#${Math.floor(Math.random()*16777215).toString(16)}`);
             this.el.appendChild(el);
+            window.generatedObjects.push(el);
           }
           // Pyramids (tetrahedrons)
           for (let i = 0; i < this.data.pyramidCount; i++) {
-            let el = document.createElement('a-entity');
             let scale = 0.5 + Math.random();
-            el.setAttribute('geometry', {
-              primitive: 'tetrahedron',
-              radius: scale
-            });
-            el.setAttribute('position', {
-              x: minX + Math.random() * (maxX - minX),
-              y: minY + Math.random() * (maxY - minY),
-              z: minZ + Math.random() * (maxZ - minZ)
-            });
+            let px = minX + Math.random() * (maxX - minX);
+            let py = minY + Math.random() * (maxY - minY);
+            let pz = minZ + Math.random() * (maxZ - minZ);
+            let el = document.createElement('a-entity');
+            el.setAttribute('geometry', {primitive: 'tetrahedron', radius: scale});
+            el.setAttribute('position', {x: px, y: py, z: pz});
             el.setAttribute('material', `color: #${Math.floor(Math.random()*16777215).toString(16)}`);
             this.el.appendChild(el);
+            window.generatedObjects.push(el);
           }
         }
       });
@@ -81,19 +107,37 @@
     <a-scene random-objects>
       <!-- Ουρανός -->
       <a-sky color="#222"></a-sky>
-      <!-- Λαβύρινθος: Τοίχοι -->
-      <a-box position="0 1 -5" width="10" height="2" depth="0.3" color="#555" id="wall1"></a-box>
-      <a-box position="5 1 0" width="0.3" height="2" depth="10" color="#555" id="wall2"></a-box>
-      <a-box position="0 1 5" width="10" height="2" depth="0.3" color="#555" id="wall3"></a-box>
-      <a-box position="-5 1 0" width="0.3" height="2" depth="10" color="#555" id="wall4"></a-box>
+      <!-- Λαβύρινθος: Εξωτερικοί τοίχοι -->
+      <a-box id="wall1" position="0 1 -5" width="10" height="2" depth="0.3" color="#555"></a-box>
+      <a-box id="wall2" position="5 1 0" width="0.3" height="2" depth="10" color="#555"></a-box>
+      <a-box id="wall3" position="0 1 5" width="10" height="2" depth="0.3" color="#555"></a-box>
+      <a-box id="wall4" position="-5 1 0" width="0.3" height="2" depth="10" color="#555"></a-box>
       <!-- Εσωτερικοί τοίχοι με πόρτες -->
-      <a-box position="0 1 -2" width="6" height="2" depth="0.3" color="#666"></a-box>
-      <a-box position="0 1 2" width="6" height="2" depth="0.3" color="#666"></a-box>
-      <!-- Πόρτα -->
-      <a-box position="0 1 0" width="2" height="2" depth="0.3" color="#ff0"></a-box>
-      <!-- Κάμερα χρήστη με κίνηση και collision -->
-      <a-entity camera wasd-controls look-controls position="0 1.6 -7"
-                simple-collision="walls: #wall1, #wall2, #wall3, #wall4"></a-entity>
+      <a-box id="intwall1" position="0 1 -2" width="6" height="2" depth="0.3" color="#666"></a-box>
+      <a-box id="intwall2" position="0 1 2" width="6" height="2" depth="0.3" color="#666"></a-box>
+      <a-box id="door" position="0 1 0" width="2" height="2" depth="0.3" color="#ff0"></a-box>
+      <!-- Κάμερα χρήστη με advanced collision -->
+      <a-entity 
+        camera 
+        wasd-controls="acceleration: 15" 
+        look-controls 
+        position="0 1.6 -7"
+        advanced-collision="obstacles: #wall1, #wall2, #wall3, #wall4, #intwall1, #intwall2, #door"
+        ></a-entity>
+      <!-- Τα αντικείμενα που δημιουργούνται δυναμικά για collision θα προστεθούν στο window.generatedObjects -->
+      <script>
+        // After scene loads, add generated objects to collision obstacles
+        document.addEventListener("DOMContentLoaded", function(){
+          setTimeout(function(){
+            let cam = document.querySelector('[camera]');
+            let ids = ['#wall1','#wall2','#wall3','#wall4','#intwall1','#intwall2','#door'];
+            let staticObstacles = ids.map(id => document.querySelector(id));
+            let dynamicObstacles = window.generatedObjects || [];
+            // Update the advanced-collision obstacles
+            cam.setAttribute('advanced-collision', {obstacles: staticObstacles.concat(dynamicObstacles)});
+          }, 1000); // Wait for objects to be generated
+        });
+      </script>
     </a-scene>
   </body>
 </html>
