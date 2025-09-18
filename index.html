@@ -2,12 +2,11 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Λαβύρινθος με A-Frame και Collision</title>
+    <title>Λαβύρινθος με Κίνηση και Τυχαία Αντικείμενα - A-Frame</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-    <!-- vibe-coding: custom collision and door scripts -->
+    <!-- vibe-coding: custom scripts -->
     <script>
-      // Collision detection component (basic)
+      // Collision detection component (from previous example)
       AFRAME.registerComponent('simple-collision', {
         schema: {walls: {type: 'selectorAll'}},
         init: function () {
@@ -21,7 +20,6 @@
             let minX = wpos.x - wsize.width/2, maxX = wpos.x + wsize.width/2;
             let minZ = wpos.z - wsize.depth/2, maxZ = wpos.z + wsize.depth/2;
             let minY = wpos.y - wsize.height/2, maxY = wpos.y + wsize.height/2;
-            // Simple bounding box collision
             if (pos.x > minX && pos.x < maxX &&
                 pos.y > minY && pos.y < maxY &&
                 pos.z > minZ && pos.z < maxZ) {
@@ -29,47 +27,73 @@
               return;
             }
           }
-          // Update last valid position
           this.lastPosition.copy(pos);
         }
       });
 
-      // Door interaction
-      AFRAME.registerComponent('door-interaction', {
+      // Random cubes and pyramids generator
+      AFRAME.registerComponent('random-objects', {
+        schema: {
+          cubeCount: {type: 'int', default: 8},
+          pyramidCount: {type: 'int', default: 6}
+        },
         init: function () {
-          this.el.addEventListener('mouseenter', () => {
-            document.querySelector('#door-audio').play();
-            document.querySelector('#door-msg').setAttribute('visible', true);
-          });
-          this.el.addEventListener('mouseleave', () => {
-            document.querySelector('#door-msg').setAttribute('visible', false);
-          });
+          // Limits for placement inside labyrinth
+          const minX = -4, maxX = 4, minZ = -4, maxZ = 4, minY = 0.5, maxY = 1.5;
+          // Cubes
+          for (let i = 0; i < this.data.cubeCount; i++) {
+            let el = document.createElement('a-box');
+            let sx = 0.5 + Math.random();
+            let sy = 0.5 + Math.random();
+            let sz = 0.5 + Math.random();
+            el.setAttribute('position', {
+              x: minX + Math.random() * (maxX - minX),
+              y: minY + Math.random() * (maxY - minY),
+              z: minZ + Math.random() * (maxZ - minZ)
+            });
+            el.setAttribute('width', sx);
+            el.setAttribute('height', sy);
+            el.setAttribute('depth', sz);
+            el.setAttribute('color', `#${Math.floor(Math.random()*16777215).toString(16)}`);
+            this.el.appendChild(el);
+          }
+          // Pyramids (tetrahedrons)
+          for (let i = 0; i < this.data.pyramidCount; i++) {
+            let el = document.createElement('a-entity');
+            let scale = 0.5 + Math.random();
+            el.setAttribute('geometry', {
+              primitive: 'tetrahedron',
+              radius: scale
+            });
+            el.setAttribute('position', {
+              x: minX + Math.random() * (maxX - minX),
+              y: minY + Math.random() * (maxY - minY),
+              z: minZ + Math.random() * (maxZ - minZ)
+            });
+            el.setAttribute('material', `color: #${Math.floor(Math.random()*16777215).toString(16)}`);
+            this.el.appendChild(el);
+          }
         }
       });
     </script>
   </head>
   <body>
-    <a-scene>
+    <a-scene random-objects>
       <!-- Ουρανός -->
       <a-sky color="#222"></a-sky>
-
       <!-- Λαβύρινθος: Τοίχοι -->
       <a-box position="0 1 -5" width="10" height="2" depth="0.3" color="#555" id="wall1"></a-box>
       <a-box position="5 1 0" width="0.3" height="2" depth="10" color="#555" id="wall2"></a-box>
       <a-box position="0 1 5" width="10" height="2" depth="0.3" color="#555" id="wall3"></a-box>
       <a-box position="-5 1 0" width="0.3" height="2" depth="10" color="#555" id="wall4"></a-box>
-      <!-- Εσωτερικοί τοίχοι με πόρτες (ανοίγματα) -->
+      <!-- Εσωτερικοί τοίχοι με πόρτες -->
       <a-box position="0 1 -2" width="6" height="2" depth="0.3" color="#666"></a-box>
       <a-box position="0 1 2" width="6" height="2" depth="0.3" color="#666"></a-box>
-      <!-- Πόρτα (απλό κουτί με μικρό πλάτος για να περνάει ο χρήστης) -->
-      <a-box position="0 1 0" width="2" height="2" depth="0.3" color="#ff0" door-interaction></a-box>
-      <a-text id="door-msg" value="Πέρασες την πόρτα!" position="0 2.5 0" visible="false" align="center" color="#fff"></a-text>
-      <audio id="door-audio" src="https://cdn.pixabay.com/audio/2022/10/16/audio_12a3263e7a.mp3"></audio>
-      
-      <!-- Κάμερα χρήστη με collision -->
+      <!-- Πόρτα -->
+      <a-box position="0 1 0" width="2" height="2" depth="0.3" color="#ff0"></a-box>
+      <!-- Κάμερα χρήστη με κίνηση και collision -->
       <a-entity camera wasd-controls look-controls position="0 1.6 -7"
-                simple-collision="walls: #wall1, #wall2, #wall3, #wall4"
-                ></a-entity>
+                simple-collision="walls: #wall1, #wall2, #wall3, #wall4"></a-entity>
     </a-scene>
   </body>
 </html>
