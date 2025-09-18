@@ -2,45 +2,48 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Εικονικό Πάρκο με A-Frame</title>
+    <title>Λαβύρινθος με A-Frame και Collision</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <!-- vibe-coding: custom scripts -->
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <!-- vibe-coding: custom collision and door scripts -->
     <script>
-      // Component που εμφανίζει μήνυμα όταν κάνεις κλικ σε ένα δέντρο
-      AFRAME.registerComponent('tree-interaction', {
+      // Collision detection component (basic)
+      AFRAME.registerComponent('simple-collision', {
+        schema: {walls: {type: 'selectorAll'}},
         init: function () {
-          this.el.addEventListener('click', () => {
-            alert('Ένα δέντρο! 🌳');
-          });
-        }
-      });
-
-      // Component που αλλάζει το χρώμα του ουρανού
-      AFRAME.registerComponent('sky-toggle', {
-        init: function () {
-          let colors = ['#88c', '#fc0', '#0cf'];
-          let i = 0;
-          this.el.addEventListener('click', () => {
-            i = (i + 1) % colors.length;
-            document.querySelector('a-sky').setAttribute('color', colors[i]);
-          });
-        }
-      });
-
-      // Component που παίζει ήχο όταν ο χρήστης πλησιάζει τη λίμνη
-      AFRAME.registerComponent('lake-sound', {
-        schema: {distance: {type: 'number', default: 4}},
+          this.lastPosition = this.el.object3D.position.clone();
+        },
         tick: function () {
-          let player = document.querySelector('[camera]');
-          let lake = this.el;
-          let dist = lake.object3D.position.distanceTo(player.object3D.position);
-          if (dist < this.data.distance && !this.played) {
-            document.querySelector('#lake-audio').play();
-            this.played = true;
+          let pos = this.el.object3D.position;
+          for (let wall of this.data.walls) {
+            let wpos = wall.object3D.position;
+            let wsize = wall.getAttribute('geometry');
+            let minX = wpos.x - wsize.width/2, maxX = wpos.x + wsize.width/2;
+            let minZ = wpos.z - wsize.depth/2, maxZ = wpos.z + wsize.depth/2;
+            let minY = wpos.y - wsize.height/2, maxY = wpos.y + wsize.height/2;
+            // Simple bounding box collision
+            if (pos.x > minX && pos.x < maxX &&
+                pos.y > minY && pos.y < maxY &&
+                pos.z > minZ && pos.z < maxZ) {
+              pos.copy(this.lastPosition); // revert to last position
+              return;
+            }
           }
-          if (dist >= this.data.distance) {
-            this.played = false;
-          }
+          // Update last valid position
+          this.lastPosition.copy(pos);
+        }
+      });
+
+      // Door interaction
+      AFRAME.registerComponent('door-interaction', {
+        init: function () {
+          this.el.addEventListener('mouseenter', () => {
+            document.querySelector('#door-audio').play();
+            document.querySelector('#door-msg').setAttribute('visible', true);
+          });
+          this.el.addEventListener('mouseleave', () => {
+            document.querySelector('#door-msg').setAttribute('visible', false);
+          });
         }
       });
     </script>
@@ -48,22 +51,25 @@
   <body>
     <a-scene>
       <!-- Ουρανός -->
-      <a-sky color="#88c"></a-sky>
-      <!-- Δέντρα με αλληλεπίδραση -->
-      <a-cylinder position="-3 0.5 -5" radius="0.5" height="2" color="#3b2" tree-interaction></a-cylinder>
-      <a-sphere position="-3 2.2 -5" radius="1" color="#6c3" tree-interaction></a-sphere>
+      <a-sky color="#222"></a-sky>
+
+      <!-- Λαβύρινθος: Τοίχοι -->
+      <a-box position="0 1 -5" width="10" height="2" depth="0.3" color="#555" id="wall1"></a-box>
+      <a-box position="5 1 0" width="0.3" height="2" depth="10" color="#555" id="wall2"></a-box>
+      <a-box position="0 1 5" width="10" height="2" depth="0.3" color="#555" id="wall3"></a-box>
+      <a-box position="-5 1 0" width="0.3" height="2" depth="10" color="#555" id="wall4"></a-box>
+      <!-- Εσωτερικοί τοίχοι με πόρτες (ανοίγματα) -->
+      <a-box position="0 1 -2" width="6" height="2" depth="0.3" color="#666"></a-box>
+      <a-box position="0 1 2" width="6" height="2" depth="0.3" color="#666"></a-box>
+      <!-- Πόρτα (απλό κουτί με μικρό πλάτος για να περνάει ο χρήστης) -->
+      <a-box position="0 1 0" width="2" height="2" depth="0.3" color="#ff0" door-interaction></a-box>
+      <a-text id="door-msg" value="Πέρασες την πόρτα!" position="0 2.5 0" visible="false" align="center" color="#fff"></a-text>
+      <audio id="door-audio" src="https://cdn.pixabay.com/audio/2022/10/16/audio_12a3263e7a.mp3"></audio>
       
-      <a-cylinder position="2 0.5 -4" radius="0.5" height="2" color="#3b2" tree-interaction></a-cylinder>
-      <a-sphere position="2 2.2 -4" radius="1" color="#6c3" tree-interaction></a-sphere>
-      <!-- Λίμνη -->
-      <a-circle position="0 0 -8" radius="2" color="#0cf" lake-sound></a-circle>
-      <audio id="lake-audio" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124b6a6b96.mp3"></audio>
-      <!-- Κουμπί για αλλαγή ουρανού -->
-      <a-box position="0 1 -2" depth="0.2" height="0.5" width="1"
-             color="#fc0" sky-toggle
-             text="value: Αλλαγή ουρανού; color: #000"></a-box>
-      <!-- Κάμερα χρήστη -->
-      <a-entity camera wasd-controls look-controls position="0 1.6 0"></a-entity>
+      <!-- Κάμερα χρήστη με collision -->
+      <a-entity camera wasd-controls look-controls position="0 1.6 -7"
+                simple-collision="walls: #wall1, #wall2, #wall3, #wall4"
+                ></a-entity>
     </a-scene>
   </body>
 </html>
