@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Advanced Labyrinth with Entry Opening - A-Frame</title>
+    <title>Labyrinth Level Loop - A-Frame</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script>
       // Helper: Calculate bounding box
@@ -51,16 +51,29 @@
         }
       });
 
-      // Random cubes and pyramids generator
+      // Random cubes and pyramids generator with click-to-vanish and level loop
       AFRAME.registerComponent('random-objects', {
         schema: { cubeCount: {type: 'int', default: 7}, pyramidCount: {type: 'int', default: 7} },
         init: function () {
+          this.generateObjects();
+        },
+        generateObjects: function () {
+          // Remove previous objects if any
+          if (window.generatedObjects) {
+            window.generatedObjects.forEach(obj => {
+              if (obj.parentNode) obj.parentNode.removeChild(obj);
+            });
+          }
           window.generatedObjects = [];
+          this.objectsLeft = this.data.cubeCount + this.data.pyramidCount;
           const minX = -4, maxX = 4, minZ = -4, maxZ = 4, minY = 0.6, maxY = 1.2;
+          // Smaller scale
+          const minScale = 0.2, maxScale = 0.5;
+          // Cubes
           for (let i = 0; i < this.data.cubeCount; i++) {
-            let sx = 0.5 + Math.random()*1;
-            let sy = 0.5 + Math.random()*1;
-            let sz = 0.5 + Math.random()*1;
+            let sx = minScale + Math.random() * (maxScale - minScale);
+            let sy = minScale + Math.random() * (maxScale - minScale);
+            let sz = minScale + Math.random() * (maxScale - minScale);
             let px = minX + Math.random() * (maxX - minX);
             let py = minY + Math.random() * (maxY - minY);
             let pz = minZ + Math.random() * (maxZ - minZ);
@@ -70,11 +83,14 @@
             el.setAttribute('height', sy);
             el.setAttribute('depth', sz);
             el.setAttribute('color', `#${Math.floor(Math.random()*16777215).toString(16)}`);
+            // Click to vanish
+            el.addEventListener('click', () => { this.handleObjectClick(el); });
             this.el.appendChild(el);
             window.generatedObjects.push(el);
           }
+          // Pyramids (tetrahedrons)
           for (let i = 0; i < this.data.pyramidCount; i++) {
-            let scale = 0.5 + Math.random();
+            let scale = minScale + Math.random() * (maxScale - minScale);
             let px = minX + Math.random() * (maxX - minX);
             let py = minY + Math.random() * (maxY - minY);
             let pz = minZ + Math.random() * (maxZ - minZ);
@@ -82,8 +98,28 @@
             el.setAttribute('geometry', {primitive: 'tetrahedron', radius: scale});
             el.setAttribute('position', {x: px, y: py, z: pz});
             el.setAttribute('material', `color: #${Math.floor(Math.random()*16777215).toString(16)}`);
+            el.addEventListener('click', () => { this.handleObjectClick(el); });
             this.el.appendChild(el);
             window.generatedObjects.push(el);
+          }
+        },
+        handleObjectClick: function (el) {
+          if (el.parentNode) el.parentNode.removeChild(el);
+          this.objectsLeft--;
+          if (this.objectsLeft === 0) {
+            // Level complete, restart after a brief delay
+            setTimeout(() => {
+              this.generateObjects();
+              // Update collisions
+              let cam = document.querySelector('[camera]');
+              let ids = [
+                '#wall1_left','#wall1_right','#wall2','#wall3','#wall4',
+                '#intwall1','#intwall2','#door'
+              ];
+              let staticObstacles = ids.map(id => document.querySelector(id));
+              let dynamicObstacles = window.generatedObjects || [];
+              cam.setAttribute('advanced-collision', {obstacles: staticObstacles.concat(dynamicObstacles)});
+            }, 800);
           }
         }
       });
@@ -91,20 +127,18 @@
   </head>
   <body>
     <a-scene random-objects>
-      <!-- Ουρανός -->
       <a-sky color="#222"></a-sky>
-      <!-- Λαβύρινθος: Εξωτερικοί τοίχοι με άνοιγμα μπροστά -->
+      <!-- External Walls with Opening -->
       <a-box id="wall1_left" position="-3 1 -5" width="4" height="2" depth="0.3" color="#555"></a-box>
       <a-box id="wall1_right" position="3 1 -5" width="4" height="2" depth="0.3" color="#555"></a-box>
-      <!-- Τοίχοι (όπως πριν) -->
       <a-box id="wall2" position="5 1 0" width="0.3" height="2" depth="10" color="#555"></a-box>
       <a-box id="wall3" position="0 1 5" width="10" height="2" depth="0.3" color="#555"></a-box>
       <a-box id="wall4" position="-5 1 0" width="0.3" height="2" depth="10" color="#555"></a-box>
-      <!-- Εσωτερικοί τοίχοι με πόρτες -->
+      <!-- Internal Walls -->
       <a-box id="intwall1" position="0 1 -2" width="6" height="2" depth="0.3" color="#666"></a-box>
       <a-box id="intwall2" position="0 1 2" width="6" height="2" depth="0.3" color="#666"></a-box>
       <a-box id="door" position="0 1 0" width="2" height="2" depth="0.3" color="#ff0"></a-box>
-      <!-- Κάμερα χρήστη με advanced collision -->
+      <!-- Camera with advanced collision -->
       <a-entity 
         camera 
         wasd-controls="acceleration: 15" 
@@ -112,12 +146,15 @@
         position="0 1.6 -7"
         advanced-collision="obstacles: #wall1_left, #wall1_right, #wall2, #wall3, #wall4, #intwall1, #intwall2, #door"
       ></a-entity>
-      <!-- Προσθέτουμε τα δυναμικά αντικείμενα για το collision μετά το φόρτωμα -->
+      <!-- Update collisions after objects are generated -->
       <script>
         document.addEventListener("DOMContentLoaded", function(){
           setTimeout(function(){
             let cam = document.querySelector('[camera]');
-            let ids = ['#wall1_left','#wall1_right','#wall2','#wall3','#wall4','#intwall1','#intwall2','#door'];
+            let ids = [
+              '#wall1_left','#wall1_right','#wall2','#wall3','#wall4',
+              '#intwall1','#intwall2','#door'
+            ];
             let staticObstacles = ids.map(id => document.querySelector(id));
             let dynamicObstacles = window.generatedObjects || [];
             cam.setAttribute('advanced-collision', {obstacles: staticObstacles.concat(dynamicObstacles)});
