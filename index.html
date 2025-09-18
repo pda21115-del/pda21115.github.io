@@ -1,112 +1,222 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Δωμάτιο με Άνοιγμα στον Τοίχο</title>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  </head>
-  <body>
-    <a-scene>
-      <!-- Δάπεδο -->
-      <a-box position="0 0 0" depth="10" height="0.1" width="10" color="#7BC8A4"></a-box>
-      <!-- Πίσω τοίχος -->
-      <a-box position="0 2 -5" depth="0.1" height="4" width="10" color="#ECECEC"></a-box>
-      <!-- Αριστερός τοίχος -->
-      <a-box position="-5 2 0" depth="10" height="4" width="0.1" color="#ECECEC"></a-box>
-      <!-- Δεξιός τοίχος -->
-      <a-box position="5 2 0" depth="10" height="4" width="0.1" color="#ECECEC"></a-box>
-      <!-- Οροφή -->
-      <a-box position="0 4.05 0" depth="10" height="0.1" width="10" color="#CFCFCF"></a-box>
-      <!-- Μπροστινός τοίχος ΜΕ άνοιγμα (χωρίς πόρτα) -->
-      <a-box position="-2 2 5" depth="0.1" height="4" width="6" color="#ECECEC"></a-box> <!-- αριστερό μέρος τοίχου -->
-      <a-box position="3.5 2 5" depth="0.1" height="4" width="3" color="#ECECEC"></a-box> <!-- δεξί μέρος τοίχου -->
-      <!-- Το άνοιγμα είναι στο κέντρο, από x = -0.5 έως x = 2, ύψος από 0 έως 2 -->
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <title>A-Frame Vibe-Coding Πανεπιστημιακό Έργο</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- A-Frame CDN -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <!-- Optional: animation & event components are included in A-Frame core -->
+  <style>
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
+    #ui {
+      position: absolute; left: 10px; top: 10px; z-index: 10; background: rgba(0,0,0,0.5);
+      color: #fff; padding: 10px; border-radius: 8px; max-width: 320px;
+    }
+    #instructions { font-size: 14px; }
+    .small { font-size: 12px; opacity: 0.9 }
+    #log { margin-top:8px; font-size: 12px; max-height:120px; overflow:auto }
+  </style>
+</head>
+<body>
+  <!-- Σύντομη περιγραφή σεναρίου (εμφανίζεται στην HTML UI) -->
+  <div id="ui">
+    <strong>Σενάριο:</strong> <span id="title">Το Μουσείο των Vibes</span>
+    <div id="instructions">Εξερευνήστε τον χώρο, αλληλεπιδράστε με τις εγκαταστάσεις (κουτιά με vibes). Κάθε αλληλεπίδραση αποκαλύπτει μέρος της ιστορίας και αλλάζει τον κόσμο (φως, ήχο, σωματίδια).</div>
+    <div class="small">Ενέργειες: Κάντε κλικ / ακριβή στόχευση με τον κέρσορα (desktop) ή χρησιμοποιήστε χειριστήρια VR.</div>
+    <div id="log"></div>
+  </div>
 
-      <!-- Camera rig για μετακίνηση -->
-      <a-entity id="cameraRig" position="0 1.6 2">
-        <a-entity camera look-controls></a-entity>
+  <!-- Η σκηνή A-Frame -->
+  <a-scene background="color: #101020" embedded>
+
+    <!-- Φως -->
+    <a-entity light="type: ambient; color: #889" ></a-entity>
+    <a-entity id="sun" light="type: directional; intensity: 0.9; color: #ffd9b3" position="-1 2 1"></a-entity>
+
+    <!-- Έδαφος/περιβάλλον -->
+    <a-plane rotation="-90 0 0" width="40" height="40" color="#111" shadow="receive: true"></a-plane>
+
+    <!-- Κεντρικό αντικείμενο (εστία) -->
+    <a-entity id="center-pole" position="0 0 0">
+      <a-cylinder height="2" radius="0.2" color="#222" position="0 1 0"></a-cylinder>
+      <a-ring radius-inner="0.6" radius-outer="1" rotation="-90 0 0" position="0 0.05 0" color="#0ff" material="opacity:0.06"></a-ring>
+    </a-entity>
+
+    <!-- Τρεις 'στάσεις' που ο χρήστης αλληλεπιδρά με αυτές -->
+    <a-entity id="stations">
+      <!-- Station A: Ηχώ (απαντά με ήχο/εικόνες) -->
+      <a-box id="stationA" class="interactive" position="-4 0.5 -3" depth="0.6" height="1" width="1" color="#ff6b6b"
+             event-set__enter="scale: 1.15 1.15 1.15" event-set__leave="scale: 1 1 1"
+             animation__rotate="property: rotation; to: 0 360 0; dur: 12000; easing: linear; loop: true"></a-box>
+
+      <!-- Station B: Φωτεινό (αλλάζει φώτα/χρώματα) -->
+      <a-box id="stationB" class="interactive" position="0 0.5 -5" depth="0.6" height="1" width="1" color="#6bafff"
+             event-set__enter="scale: 1.15 1.15 1.15" event-set__leave="scale: 1 1 1"></a-box>
+
+      <!-- Station C: Σωματίδια (αισθητικό εφέ) -->
+      <a-box id="stationC" class="interactive" position="4 0.5 -3" depth="0.6" height="1" width="1" color="#8dff6b"
+             event-set__enter="scale: 1.15 1.15 1.15" event-set__leave="scale: 1 1 1"></a-box>
+    </a-entity>
+
+    <!-- Floating info panels (κρύβονται / εμφανίζονται) -->
+    <a-entity id="panels">
+      <a-plane id="panelA" position="-4 2 -3" width="2" height="1" color="#111" visible="false" material="opacity:0.8">
+        <a-text value="Ηχώ:\n Πάτα για να ακούσεις ένα vibe" align="center" color="#fff" width="1.8" position="0 0 0.01"></a-text>
+      </a-plane>
+      <a-plane id="panelB" position="0 2 -5" width="2" height="1" color="#111" visible="false" material="opacity:0.8">
+        <a-text value="Φωτεινό:\n Αλλάζει την ατμόσφαιρα" align="center" color="#fff" width="1.8" position="0 0 0.01"></a-text>
+      </a-plane>
+      <a-plane id="panelC" position="4 2 -3" width="2" height="1" color="#111" visible="false" material="opacity:0.8">
+        <a-text value="Σωματίδια:\n Δημιούργησε εφέ vibes" align="center" color="#fff" width="1.8" position="0 0 0.01"></a-text>
+      </a-plane>
+    </a-entity>
+
+    <!-- Particle systems (απλά με μικρά sprites) -->
+    <a-entity id="particlesA" position="-4 1.2 -3" visible="false">
+      <a-sphere radius="0.05" position="0 0 0" color="#ffbbbb" animation="property: position; to: 0 2 0; dur: 1500; dir: alternate; loop: true"></a-sphere>
+      <a-sphere radius="0.03" position="0.3 0 0" color="#ff9b9b" animation="property: position; to: 0.3 1.6 0; dur: 1200; dir: alternate; loop: true"></a-sphere>
+    </a-entity>
+
+    <a-entity id="particlesB" position="0 1.2 -5" visible="false">
+      <a-sphere radius="0.05" position="0 0 0" color="#bcdcff" animation="property: position; to: 0 2 0; dur: 1000; dir: alternate; loop: true"></a-sphere>
+    </a-entity>
+
+    <a-entity id="particlesC" position="4 1.2 -3" visible="false">
+      <a-sphere radius="0.05" position="0 0 0" color="#dfffb6" animation="property: position; to: 0 2 0; dur: 900; dir: alternate; loop: true"></a-sphere>
+    </a-entity>
+
+    <!-- Camera & Cursor για desktop και VR controllers -->
+    <a-entity id="cameraRig">
+      <a-entity camera look-controls wasd-controls position="0 1.6 6">
+        <a-entity cursor="fuse: false; rayOrigin: mouse" raycaster="objects: .interactive" position="0 0 -1"
+                  geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02" material="color: #fff; shader: flat">
+        </a-entity>
       </a-entity>
+    </a-entity>
 
-      <script>
-        // Κίνηση κάμερας προς το mouse στο δάπεδο
-        document.addEventListener('DOMContentLoaded', () => {
-          const scene = document.querySelector('a-scene');
-          const cameraRig = document.getElementById('cameraRig');
-          let target = null;
-          let moving = false;
+    <!-- Στοιχεία UI που κινούνται με την κάμερα για feedback -->
+    <a-entity id="hud" position="0 1.5 -1.2">
+      <a-text id="hudText" value="Ενέργειες: 0" align="center" color="#fff" width="2"></a-text>
+    </a-entity>
 
-          scene.addEventListener('mousedown', (event) => {
-            moving = true;
-            setTargetFromMouse(event);
-          });
-          scene.addEventListener('mousemove', (event) => {
-            if (moving) setTargetFromMouse(event);
-          });
-          window.addEventListener('mouseup', () => {
-            moving = false;
-            target = null;
-          });
+  </a-scene>
 
-          function setTargetFromMouse(event) {
-            const mouse = {
-              x: (event.clientX / window.innerWidth) * 2 - 1,
-              y: -(event.clientY / window.innerHeight) * 2 + 1
-            };
-            const camera = scene.camera;
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(mouse, camera);
-            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // y=0 plane
-            const intersect = new THREE.Vector3();
-            raycaster.ray.intersectPlane(plane, intersect);
-            // Room boundaries
-            intersect.x = Math.max(-4.8, Math.min(4.8, intersect.x));
-            intersect.z = Math.max(-4.8, Math.min(4.8, intersect.z));
-            target = {x: intersect.x, z: intersect.z};
-          }
+  <script>
+    // --------------------------------------------------
+    // Κώδικας σεναρίου & αλληλεπίδρασης (vibe-coding)
+    // --------------------------------------------------
 
-          // Move camera towards target point
-          scene.addEventListener('renderstart', () => {
-            scene.addEventListener('tick', () => {
-              if (moving && target) {
-                const pos = cameraRig.getAttribute('position');
-                const dx = target.x - pos.x;
-                const dz = target.z - pos.z;
-                const dist = Math.sqrt(dx*dx + dz*dz);
-                const speed = 0.08;
-                if (dist > 0.05) {
-                  const nx = pos.x + dx/dist * speed;
-                  const nz = pos.z + dz/dist * speed;
-                  cameraRig.setAttribute('position', {x:nx, y:pos.y, z:nz});
-                }
-              }
-            });
-          });
+    // Περιγραφή: Ο χρήστης περιηγείται σε ένα μικρό 'μουσείο vibes'.
+    // Κάθε station έχει τρία είδη αλληλεπίδρασης:
+    //  - (α) Σενάριο: εμφανίζει πληροφορίες / προχωρά την ιστορία
+    //  - (β) Γραφικά: αλλάζει χρώματα / εμφανίζει σωματίδια / φωτισμό
+    //  - (γ) Αλληλεπίδραση: κλικ/στόχευση, χρήστης μπορεί να ενεργοποιήσει ακολουθίες
+
+    (function(){
+      const logEl = document.getElementById('log');
+      const hudText = document.getElementById('hudText');
+      let actions = 0;
+
+      function log(msg){
+        const p = document.createElement('div'); p.textContent = msg; logEl.prepend(p);
+      }
+
+      // Helper: toggle panel visibility
+      function showPanel(id){
+        document.querySelectorAll('#panels a-plane').forEach(p=>p.setAttribute('visible','false'));
+        const panel = document.getElementById(id);
+        if(panel){ panel.setAttribute('visible','true'); }
+      }
+
+      // Helper: toggle particle group
+      function toggleParticles(id, visible){
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.setAttribute('visible', visible ? 'true' : 'false');
+      }
+
+      // Station interactions
+      const stationA = document.getElementById('stationA');
+      const stationB = document.getElementById('stationB');
+      const stationC = document.getElementById('stationC');
+
+      // Add click listeners using A-Frame's DOM events
+      stationA.addEventListener('click', function(evt){
+        actions++; hudText.setAttribute('value', `Ενέργειες: ${actions}`);
+        log('Station A ενεργοποιήθηκε — Ηχώ.');
+        showPanel('panelA');
+        toggleParticles('particlesA', true);
+        // γραφικά αλλαγή: παλμός φωτός
+        const sun = document.getElementById('sun');
+        sun.setAttribute('light', 'intensity', 1.6);
+        setTimeout(()=> sun.setAttribute('light','intensity',0.9), 1400);
+      });
+
+      stationB.addEventListener('click', function(evt){
+        actions++; hudText.setAttribute('value', `Ενέργειες: ${actions}`);
+        log('Station B ενεργοποιήθηκε — Φωτεινό σκηνικό.');
+        showPanel('panelB');
+        toggleParticles('particlesB', true);
+        // αλλάζουμε χρώμα του κέντρου
+        const ring = document.querySelector('#center-pole a-ring');
+        ring.setAttribute('material','color', '#ffb3ff');
+        // μετά από λίγο, εμφάνιση μικρής έκρηξης (scale animation)
+        const center = document.getElementById('center-pole');
+        center.emit('pulse');
+      });
+
+      stationC.addEventListener('click', function(evt){
+        actions++; hudText.setAttribute('value', `Ενέργειες: ${actions}`);
+        log('Station C ενεργοποιήθηκε — Σωματιδιακό εφέ.');
+        showPanel('panelC');
+        toggleParticles('particlesC', true);
+        // δημιουργούμε δυναμικά αντικείμενα (spawn)
+        spawnVibeOrb({x:4, y:1.5, z:-3});
+      });
+
+      // Δυναμική δημιουργία orb που πετάγονται και εξαφανίζονται
+      function spawnVibeOrb(pos){
+        const scene = document.querySelector('a-scene');
+        const orb = document.createElement('a-sphere');
+        orb.setAttribute('radius', 0.14);
+        orb.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+        orb.setAttribute('material', 'color: #ffd86b; opacity: 0.95');
+        orb.setAttribute('class', 'interactive');
+        // animation: ανύψωση + διαλυση
+        orb.setAttribute('animation__rise', 'property: position; to: '+pos.x+' '+(pos.y+2)+' '+pos.z+'; dur:1400; easing: easeOutCubic');
+        orb.setAttribute('animation__fade', 'property: material.opacity; to: 0; dur:1400; easing: linear; delay: 900');
+        // όταν κάνουμε click στο orb, παίρνουμε επιπλέον feedback
+        orb.addEventListener('click', function(){
+          log('Orb συλλέχθηκε — μικρό bonus vibe!');
+          orb.parentNode.removeChild(orb);
+          actions++; hudText.setAttribute('value', `Ενέργειες: ${actions}`);
         });
+        scene.appendChild(orb);
+        // auto-remove μετά από 1800ms
+        setTimeout(()=>{ if(orb.parentNode) orb.parentNode.removeChild(orb); }, 1800);
+      }
 
-        // Collision: να μην βγαίνει εκτός, εκτός από το άνοιγμα
-        document.addEventListener('DOMContentLoaded', () => {
-          const scene = document.querySelector('a-scene');
-          const cameraRig = document.getElementById('cameraRig');
-          const minX = -4.8, maxX = 4.8, minZ = -4.8, maxZ = 4.8;
-          // Όρια ανοίγματος στον μπροστινό τοίχο
-          const openingMinX = -0.5, openingMaxX = 2, openingMinZ = 4.8, openingMaxZ = 5.2;
+      // Πρόσθετο: pulse animation event για center pole
+      const centerPole = document.getElementById('center-pole');
+      centerPole.setAttribute('animation__pulse', 'property: scale; startEvents: pulse; from: 1 1 1; to: 1.18 1.18 1.18; dur: 220; dir: alternate; easing: easeInOutQuad');
 
-          scene.addEventListener('tick', () => {
-            const pos = cameraRig.getAttribute('position');
-            let x = pos.x, z = pos.z;
-            // Clamp to room boundaries
-            x = Math.max(minX, Math.min(maxX, x));
-            z = Math.max(minZ, Math.min(maxZ, z));
-            // Μην αφήνεις να βγει εκτός του μπροστινού τοίχου, εκτός από το άνοιγμα
-            if (z > maxZ) {
-              if (!(x >= openingMinX && x <= openingMaxX && z <= openingMaxZ)) {
-                z = maxZ;
-              }
-            }
-            cameraRig.setAttribute('position', {x:x, y:pos.y, z:z});
-          });
-        });
-      </script>
-    </a-scene>
-  </body>
+      // Ξεκινάμε με μικρό welcome log
+      log('Καλωσήρθατε — Εξερευνήστε και αλληλεπιδράστε με τα vibes.');
+
+      // Εναλλακτικά: ενεργοποίηση με το πληκτρολόγιο για δοκιμή
+      window.addEventListener('keydown', function(e){
+        if(e.key === '1') stationA.emit('click');
+        if(e.key === '2') stationB.emit('click');
+        if(e.key === '3') stationC.emit('click');
+      });
+
+      // UX: όταν ο pointer περνά πάνω από interactive αντικείμενα, εμφανίζεται tooltip στο UI
+      document.querySelectorAll('.interactive').forEach(el=>{
+        el.addEventListener('mouseenter', ()=> log('Στόχευση: ' + (el.id || 'αντικείμενο')));
+      });
+
+    })();
+  </script>
+</body>
 </html>
