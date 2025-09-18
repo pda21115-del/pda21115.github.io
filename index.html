@@ -1,1 +1,112 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Δωμάτιο με Άνοιγμα στον Τοίχο</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <!-- Δάπεδο -->
+      <a-box position="0 0 0" depth="10" height="0.1" width="10" color="#7BC8A4"></a-box>
+      <!-- Πίσω τοίχος -->
+      <a-box position="0 2 -5" depth="0.1" height="4" width="10" color="#ECECEC"></a-box>
+      <!-- Αριστερός τοίχος -->
+      <a-box position="-5 2 0" depth="10" height="4" width="0.1" color="#ECECEC"></a-box>
+      <!-- Δεξιός τοίχος -->
+      <a-box position="5 2 0" depth="10" height="4" width="0.1" color="#ECECEC"></a-box>
+      <!-- Οροφή -->
+      <a-box position="0 4.05 0" depth="10" height="0.1" width="10" color="#CFCFCF"></a-box>
+      <!-- Μπροστινός τοίχος ΜΕ άνοιγμα (χωρίς πόρτα) -->
+      <a-box position="-2 2 5" depth="0.1" height="4" width="6" color="#ECECEC"></a-box> <!-- αριστερό μέρος τοίχου -->
+      <a-box position="3.5 2 5" depth="0.1" height="4" width="3" color="#ECECEC"></a-box> <!-- δεξί μέρος τοίχου -->
+      <!-- Το άνοιγμα είναι στο κέντρο, από x = -0.5 έως x = 2, ύψος από 0 έως 2 -->
 
+      <!-- Camera rig για μετακίνηση -->
+      <a-entity id="cameraRig" position="0 1.6 2">
+        <a-entity camera look-controls></a-entity>
+      </a-entity>
+
+      <script>
+        // Κίνηση κάμερας προς το mouse στο δάπεδο
+        document.addEventListener('DOMContentLoaded', () => {
+          const scene = document.querySelector('a-scene');
+          const cameraRig = document.getElementById('cameraRig');
+          let target = null;
+          let moving = false;
+
+          scene.addEventListener('mousedown', (event) => {
+            moving = true;
+            setTargetFromMouse(event);
+          });
+          scene.addEventListener('mousemove', (event) => {
+            if (moving) setTargetFromMouse(event);
+          });
+          window.addEventListener('mouseup', () => {
+            moving = false;
+            target = null;
+          });
+
+          function setTargetFromMouse(event) {
+            const mouse = {
+              x: (event.clientX / window.innerWidth) * 2 - 1,
+              y: -(event.clientY / window.innerHeight) * 2 + 1
+            };
+            const camera = scene.camera;
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // y=0 plane
+            const intersect = new THREE.Vector3();
+            raycaster.ray.intersectPlane(plane, intersect);
+            // Room boundaries
+            intersect.x = Math.max(-4.8, Math.min(4.8, intersect.x));
+            intersect.z = Math.max(-4.8, Math.min(4.8, intersect.z));
+            target = {x: intersect.x, z: intersect.z};
+          }
+
+          // Move camera towards target point
+          scene.addEventListener('renderstart', () => {
+            scene.addEventListener('tick', () => {
+              if (moving && target) {
+                const pos = cameraRig.getAttribute('position');
+                const dx = target.x - pos.x;
+                const dz = target.z - pos.z;
+                const dist = Math.sqrt(dx*dx + dz*dz);
+                const speed = 0.08;
+                if (dist > 0.05) {
+                  const nx = pos.x + dx/dist * speed;
+                  const nz = pos.z + dz/dist * speed;
+                  cameraRig.setAttribute('position', {x:nx, y:pos.y, z:nz});
+                }
+              }
+            });
+          });
+        });
+
+        // Collision: να μην βγαίνει εκτός, εκτός από το άνοιγμα
+        document.addEventListener('DOMContentLoaded', () => {
+          const scene = document.querySelector('a-scene');
+          const cameraRig = document.getElementById('cameraRig');
+          const minX = -4.8, maxX = 4.8, minZ = -4.8, maxZ = 4.8;
+          // Όρια ανοίγματος στον μπροστινό τοίχο
+          const openingMinX = -0.5, openingMaxX = 2, openingMinZ = 4.8, openingMaxZ = 5.2;
+
+          scene.addEventListener('tick', () => {
+            const pos = cameraRig.getAttribute('position');
+            let x = pos.x, z = pos.z;
+            // Clamp to room boundaries
+            x = Math.max(minX, Math.min(maxX, x));
+            z = Math.max(minZ, Math.min(maxZ, z));
+            // Μην αφήνεις να βγει εκτός του μπροστινού τοίχου, εκτός από το άνοιγμα
+            if (z > maxZ) {
+              if (!(x >= openingMinX && x <= openingMaxX && z <= openingMaxZ)) {
+                z = maxZ;
+              }
+            }
+            cameraRig.setAttribute('position', {x:x, y:pos.y, z:z});
+          });
+        });
+      </script>
+    </a-scene>
+  </body>
+</html>
