@@ -139,14 +139,13 @@
       <a-box id="intwall5" position="7 1 -2.45177" width="0.3" height="2" depth="8" color="#666" material="" geometry=""></a-box>
       <a-box id="intwall6" position="-7 1 -1.16831" width="0.3" height="2" depth="8" color="#666" material="" geometry=""></a-box>
       <!-- "Doors" (openings in internal walls) -->
-      <a-box id="door1" position="2 1 -3" width="3" height="2" depth="0.3" color="#ff0" material="" geometry=""
-       animation="property: position; 
-                  dir: alternate; 
-                  dur: 2000; 
-                  easing: easeInOutSine; 
-                  loop: true; 
-                  from: 0 1 -3
-                  to: 2 1 -3"></a-box>
+     <a-box id="door1" position="2 1 -3" width="3" height="2" depth="0.3" color="#ff0"
+       animation="property: position;
+                  to: -2 1 -3;
+                  dur: 2000;
+                  dir: alternate;
+                  loop: true;
+                  easing: easeInOutSine"></a-box>
       <a-box id="door2" position="-2.31441 1 7.62556" width="3" height="2" depth="0.3" color="#ff0" material="" geometry=""></a-box>
       <!-- Camera with advanced collision and cursor for mouse click -->
       <a-entity 
