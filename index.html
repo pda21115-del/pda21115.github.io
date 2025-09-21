@@ -200,6 +200,9 @@
           function stopSteps() {
             moving = false;
             clearInterval(stepInterval);
+            if (footstep.components.sound) {
+              footstep.components.sound.stopSound(); // stop sound immediately
+            }
           }
 
           window.addEventListener('keydown', e => {
