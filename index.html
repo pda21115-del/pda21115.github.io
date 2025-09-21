@@ -119,7 +119,7 @@
   <body>
     <a-scene random-objects>
     <a-assets>
-    <audio id="footstep" src="file:///C:/Users/minime/Downloads/concrete-footsteps-1-6265(6).mp3"></audio>
+    <audio id="footstep" src="https://raw.githubusercontent.com/pda21115-del/pda21115.github.io/main/concrete-footsteps-1.mp3"></audio>
   </a-assets>
 
     
@@ -165,14 +165,14 @@
       material="color: #FFF; shader: flat">
     </a-entity>
 
-    <!-- 🎵 Sound entity for footsteps -->
+    <!--  Sound entity for footsteps -->
     <a-entity id="footstepSound"
               sound="src: #footstep; autoplay: false; poolSize: 4; volume: 0.8">
     </a-entity>
   </a-entity>
 </a-scene>
 
-<!-- 📜 Footstep script -->
+<!--  Footstep script -->
 <script>
   const footstep = document.getElementById('footstepSound');
   let moving = false;
@@ -220,7 +220,7 @@
             cam.setAttribute('advanced-collision', {obstacles: staticObstacles.concat(dynamicObstacles)});
           }, 1000);
 
-          // 🎵 Footstep logic
+          //  Footstep logic
           const footstep = document.getElementById('footstepSound');
           let moving = false;
           let stepInterval;
